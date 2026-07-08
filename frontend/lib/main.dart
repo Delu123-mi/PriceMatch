@@ -36,7 +36,6 @@ class _SearchScreenState extends State<SearchScreen> {
   List<dynamic> _searchResults = [];
   bool _isLoading = false;
 
-  // We will implement this search function next to connect to your local backend!
   Future<void> _searchProducts(String query) async {
     if (query.trim().isEmpty) return;
 
@@ -45,11 +44,11 @@ class _SearchScreenState extends State<SearchScreen> {
     });
 
     try {
-      // Temporary: We will update this IP/URL to match your running Node.js server
-      final response = await _dio.get('http://localhost:5000/api/products/search?q=$query');
+      final response = await _dio.get('http://192.168.43.200:5000/api/search?q=$query');
       
       setState(() {
-        _searchResults = response.data;
+        // FIX 1: Point directly to the 'results' array key from your backend map
+        _searchResults = response.data['results'] ?? [];
         _isLoading = false;
       });
     } catch (e) {
@@ -102,15 +101,24 @@ class _SearchScreenState extends State<SearchScreen> {
                           itemCount: _searchResults.length,
                           itemBuilder: (context, index) {
                             final item = _searchResults[index];
+                            
+                            // FIX 2: Safely extract nested data from populated backend structure
+                            final productData = item['productId'] ?? {};
+                            final productName = productData['name'] ?? 'Unknown Product';
+                            final productCategory = productData['category'] ?? 'N/A';
+                            final storeName = item['storeName'] ?? 'Unknown Store';
+                            final price = item['price']?.toDouble() ?? 0.0;
+
                             return Card(
                               elevation: 2,
                               margin: const EdgeInsets.symmetric(vertical: 8),
                               child: ListTile(
                                 leading: const Icon(Icons.shopping_bag, color: Colors.teal),
-                                title: Text(item['name'] ?? 'Unknown Product', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text('Category: ${item['category'] ?? 'N/A'}'),
+                                title: Text(productName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: Text('Store: $storeName\nCategory: $productCategory'),
+                                isThreeLine: true,
                                 trailing: Text(
-                                  '\$${item['cheapestPrice']?.toStringAsFixed(2) ?? '0.00'}',
+                                  '\$$price',
                                   style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16),
                                 ),
                               ),
